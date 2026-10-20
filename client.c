@@ -31,11 +31,34 @@ int main(void) {
     }
   
     // Создаём запрос
-    struct request req = {
-        .priority = 5,
-        .command = CMD_ENCRYPT,
-        .value = 12
-    };
+    struct request req = {0};
+
+    printf("Введите приоритет (0-10): ");
+    if(scanf("%d", &req.priority) != 1){
+         fprintf(stderr, "Некорректный приоритет\n");
+        close(client_fd);
+        return EXIT_FAILURE;
+    }
+
+    printf("Введите команду (1 - ENCRYPT, 2 - TIMER, 3 - STATUS): ");
+    if (scanf("%d", &req.command) != 1) {
+        fprintf(stderr, "Некорректная команда\n");
+        close(client_fd);
+        return EXIT_FAILURE;
+    }
+
+    printf("Введите значение: ");
+    if (scanf("%d", &req.value) != 1) {
+        fprintf(stderr, "Некорректное значение\n");
+        close(client_fd);
+        return EXIT_FAILURE;
+    }
+
+    if (req.priority < 0 || req.priority > 10) {
+        fprintf(stderr, "Приоритет должен быть от 0 до 10\n");
+        close(client_fd);
+        return EXIT_FAILURE;
+    }
 
     // Отправляем запрос серверу
     ssize_t bytes = write(client_fd, &req, sizeof(req));
@@ -76,6 +99,6 @@ int main(void) {
 
     // Закрываем соединение
     close(client_fd);
-    
+
     return EXIT_SUCCESS;
 }
