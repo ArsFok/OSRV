@@ -66,58 +66,55 @@ int main(){
     printf("[SERVER] Ожидание клиента...\n");
 
     // Принимаем подключение
+    while(1){
+        int client_fd = accept(server_fd, NULL, NULL);
 
-    int client_fd = accept(server_fd, NULL, NULL);
+        if(client_fd == -1){
+            perror("accept");
+            break;
+        }
 
-    if(client_fd == -1){
-        perror("accept");
-        close(server_fd);
-        unlink(SOCKET_PATH);
-        return EXIT_FAILURE;
-    }
+        printf("[SERVER] Клиент подключился\n");
 
-    printf("[SERVER] Клиент подключился\n");
+        // Получаем запрос 
 
-    // Получаем число 
+        struct request req =  {0};
 
-    struct request req =  {0};
+        ssize_t bytes = read(client_fd, &req, sizeof(req));
+        
+        if(bytes != sizeof(req)){
+            fprintf(stderr, "Ошибка чтения запроса\n");
+            close(client_fd);
+            continue;
+        }
 
-    ssize_t bytes = read(client_fd, &req, sizeof(req));
-    
-    if(bytes != sizeof(req)){
-        fprintf(stderr, "Ошибка чтения запроса\n");
+        // Вводим информацию
+        printf("[SERVER] Получено число:\n");
+        printf("Приоритет: %d\n", req.priority);
+        printf("Команда: %d\n", req.command);
+        printf("Значение: %d\n", req.value);
+
+        // Обрабатываем запрос
+        struct response resp = process_request(req);
+
+        // Отправляем ответ
+        ssize_t bytes_written = write(client_fd, &resp, sizeof(resp));
+
+        if(bytes_written == -1){
+            perror("write");
+        }else if(bytes_written != sizeof(resp)){
+            fprintf(stderr, "Ответ отправлен не полностью\n");
+        }else{
+            printf("[SERVER] Ответ отправлен:\n");
+            printf("Статус: %d\n", resp.status);
+            printf("Результат: %d\n", resp.result);
+        }
+
+        // закрываем клиента
         close(client_fd);
-        close(server_fd);
-        unlink(SOCKET_PATH);
-        return EXIT_FAILURE;
     }
-
-    printf("[SERVER] Получено число:\n");
-    printf("Приоритет: %d\n", req.priority);
-    printf("Команда: %d\n", req.command);
-    printf("Значение: %d\n", req.value);
-
-    // Обрабатываем запрос
-    struct response resp = process_request(req);
-
-    // Отправляем ответ
-
-    ssize_t bytes_written = write(client_fd, &resp, sizeof(resp));
-
-    if(bytes_written == -1){
-        perror("write");
-    }else if(bytes_written != sizeof(resp)){
-        fprintf(stderr, "Ответ отправлен не полностью\n");
-    }else{
-        printf("[SERVER] Ответ отправлен:\n");
-        printf("Статус: %d\n", resp.status);
-        printf("Результат: %d\n", resp.result);
-    }
-
-    // Очистка ресурсов
-    close(client_fd);
+    // Освободаем ресурсы сервера
     close(server_fd);
     unlink(SOCKET_PATH);
-
     return EXIT_SUCCESS;
 }
