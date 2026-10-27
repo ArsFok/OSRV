@@ -5,6 +5,7 @@
 #include <sys/un.h>
 
 #include "protocol.h"
+#include "io.h"
 
 #define SOCKET_PATH "/tmp/otp_server.sock"
 
@@ -80,7 +81,7 @@ int main(){
 
         struct request req =  {0};
 
-        ssize_t bytes = read(client_fd, &req, sizeof(req));
+        ssize_t bytes = read_full(client_fd, &req, sizeof(req));
         
         if(bytes != sizeof(req)){
             fprintf(stderr, "Ошибка чтения запроса\n");
@@ -98,7 +99,7 @@ int main(){
         struct response resp = process_request(req);
 
         // Отправляем ответ
-        ssize_t bytes_written = write(client_fd, &resp, sizeof(resp));
+        ssize_t bytes_written = write_full(client_fd, &resp, sizeof(resp));
 
         if(bytes_written == -1){
             perror("write");
